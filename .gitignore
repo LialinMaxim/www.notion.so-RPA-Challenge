@@ -6,7 +6,8 @@
 
 venv/
 env/
-output/
+output/pdf/
+output/json/
 temp/
 testrun/
 
