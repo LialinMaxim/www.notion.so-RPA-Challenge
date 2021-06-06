@@ -100,6 +100,7 @@ class SiteParser:
         return r
 
     def __call__(self, *args, **kwargs):
+        self._set_up(self.output_folder)
         file_path = os.path.join(self.output_folder, f'{self.output_file}.xlsx')
         with pd.ExcelWriter(file_path, engine='xlsxwriter') as writer:
             agencies = self.get_agencies()
