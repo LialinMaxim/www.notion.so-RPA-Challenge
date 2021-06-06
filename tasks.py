@@ -12,13 +12,14 @@ class SiteParser:
     BASE_API_URL = f'{HOME_URL}/api/v1/ITDB2'
 
     def __init__(self, output_file='itdashboard_gov', folder='output', sleep_seconds=0.7, reload_files=False,
-                 pdf_columns=None, pdf_page=0,
+                 agencies_list=None, pdf_columns=None, pdf_page=0,
                  index_rows=False, sort_agency_columns=None, sort_investments_columns=None):
         self.session = requests.session()
         self.output_file = output_file
         self.reload_files = reload_files
         self.index = index_rows
         self.sleep = sleep_seconds
+        self.agencies_list = agencies_list or tuple()
         self.pdf_columns = pdf_columns
         self.pdf_page = pdf_page
         self.agency_columns = sort_agency_columns
@@ -107,23 +108,26 @@ class SiteParser:
             df = pd.DataFrame(agencies)
             df.to_excel(writer, sheet_name="agencies", index=self.index, columns=self.agency_columns)
             for agency in self.get_agencies():
-                investments = self.get_agency(agency['agencyCode'])
-                for i in investments:
-                    if i.get('businessCaseId') and i.get('numberOfProjects'):
-                        i.update(
-                            self.get_pdf_values(code=i['agencyCode'], uii=i['UII'])
-                        )
-                df = pd.DataFrame(investments)
-                print({'agencyCode': agency['agencyCode'], 'data': df.shape}, '\n')
-                df.to_excel(
-                    writer,
-                    sheet_name=agency['agencyCode'],
-                    index=self.index,
-                    columns=self.investments_columns
-                )
+                if (not self.agencies_list) or (agency['agencyCode'] in self.agencies_list):
+                    investments = self.get_agency(agency['agencyCode'])
+                    for i in investments:
+                        if i.get('businessCaseId') and i.get('numberOfProjects'):
+                            i.update(
+                                self.get_pdf_values(code=i['agencyCode'], uii=i['UII'])
+                            )
+                    df = pd.DataFrame(investments)
+                    print({'agencyCode': agency['agencyCode'], 'data': df.shape}, '\n')
+                    df.to_excel(
+                        writer,
+                        sheet_name=f"{agency['agencyCode']}_{agency['agencyName']}".replace(' ', '_')[:30],
+                        index=self.index,
+                        columns=self.investments_columns
+                    )
 
 
 main = SiteParser(
+    output_file='itdashboard_gov_part',
+    agencies_list=['007', '012', '422'],
     pdf_columns={
         '1. Name of this Investment': 'PDF Investment',
         '2. Unique Investment Identifier (UII)': 'PDF UII'
